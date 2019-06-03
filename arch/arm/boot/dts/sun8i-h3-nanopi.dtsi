@@ -151,7 +151,7 @@
 		simple-audio-card,name = "I2S-master";
 		simple-audio-card,mclk-fs = <256>;
 		simple-audio-card,format = "i2s";
-		status = "okay";
+		status = "disabled";
 
 		simple-audio-card,cpu {
 			sound-dai = <&i2s0>;
@@ -159,6 +159,30 @@
 
 		simple-audio-card,codec {
 			sound-dai = <&pcm5102a>;
+		};
+	};
+
+	adau7002: adau7002-codec {
+		#sound-dai-cells = <0>;
+		compatible = "adi,adau7002";
+		status = "okay";
+	};
+
+	sound_i2s_slave {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "I2S-slave";
+		simple-audio-card,mclk-fs = <256>;
+		simple-audio-card,format = "i2s";
+    simple-audio-card,bitclock-slave = <&adau7002>;
+    simple-audio-card,frame-slave = <&adau7002>;
+		status = "okay";
+
+		simple-audio-card,cpu {
+			sound-dai = <&i2s0>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&adau7002>;
 		};
 	};
 
@@ -361,7 +385,7 @@
 };
 
 &i2c1 {
-	status = "okay";
+	status = "disabled";
 };
 
 &i2c2 {
@@ -480,8 +504,8 @@
 };
 
 &i2s0 {
-	sound-dai = <&pcm5102a>;
-	status = "disabled";
+	sound-dai = <&adau7002>;
+	status = "okay";
 };
 
 &i2s2 {

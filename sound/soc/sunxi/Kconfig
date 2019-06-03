@@ -33,6 +33,7 @@ config SND_SUN4I_I2S
 	select SND_SOC_GENERIC_DMAENGINE_PCM
 	select REGMAP_MMIO
 	select SND_SOC_PCM5102A
+	select SND_SOC_ADAU7002
 	help
 	  Say Y or M if you want to add support for codecs attached to
 	  the Allwinner A10 I2S. You will also need to select the

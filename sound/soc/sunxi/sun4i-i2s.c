@@ -110,12 +110,14 @@
 
 #define SUN8I_I2S_TX_CHAN_MAP_REG	0x44
 #define SUN8I_I2S_TX_CHAN_SEL_REG	0x34
-#define SUN8I_I2S_TX_CHAN_OFFSET_MASK		GENMASK(13, 11)
+#define SUN8I_I2S_TX_CHAN_OFFSET_MASK		GENMASK(13, 12)
 #define SUN8I_I2S_TX_CHAN_OFFSET(offset)	(offset << 12)
 #define SUN8I_I2S_TX_CHAN_EN_MASK		GENMASK(11, 4)
 #define SUN8I_I2S_TX_CHAN_EN(num_chan)		(((1 << num_chan) - 1) << 4)
 
 #define SUN8I_I2S_RX_CHAN_SEL_REG	0x54
+#define SUN8I_I2S_RX_CHAN_OFFSET_MASK		GENMASK(13, 12)
+#define SUN8I_I2S_RX_CHAN_OFFSET(offset)	(offset << 12)
 #define SUN8I_I2S_RX_CHAN_MAP_REG	0x58
 
 /**
@@ -387,6 +389,9 @@ static int sun4i_i2s_hw_params(struct snd_pcm_substream *substream,
 	case 16:
 		width = DMA_SLAVE_BUSWIDTH_2_BYTES;
 		break;
+	case 32:
+		width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -396,6 +401,10 @@ static int sun4i_i2s_hw_params(struct snd_pcm_substream *substream,
 	case 16:
 		sr = 0;
 		wss = 0;
+		break;
+	case 32:
+		sr = 4;
+		wss = 4;
 		break;
 
 	default:
@@ -490,9 +499,9 @@ static int sun4i_i2s_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		default:
 			return -EINVAL;
 		}
-		regmap_update_bits(i2s->regmap, SUN4I_I2S_CTRL_REG,
-				   SUN4I_I2S_CTRL_MODE_MASK,
-				   val);
+//		regmap_update_bits(i2s->regmap, SUN4I_I2S_CTRL_REG,
+//				   SUN4I_I2S_CTRL_MODE_MASK,
+//				   val);
 	} else {
 		/*
 		 * The newer i2s block does not have a slave select bit,
@@ -512,10 +521,10 @@ static int sun4i_i2s_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		default:
 			return -EINVAL;
 		}
-		regmap_update_bits(i2s->regmap, SUN4I_I2S_CTRL_REG,
-				   SUN8I_I2S_CTRL_BCLK_OUT |
-				   SUN8I_I2S_CTRL_LRCK_OUT,
-				   val);
+//		regmap_update_bits(i2s->regmap, SUN4I_I2S_CTRL_REG,
+//				   SUN8I_I2S_CTRL_BCLK_OUT |
+//				   SUN8I_I2S_CTRL_LRCK_OUT,
+//				   val);
 	}
 
 	/* Set significant bits in our FIFOs */
@@ -702,7 +711,9 @@ static struct snd_soc_dai_driver sun4i_i2s_dai = {
 		.channels_min = 2,
 		.channels_max = 2,
 		.rates = SNDRV_PCM_RATE_8000_192000,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		.formats =
+      SNDRV_PCM_FMTBIT_S16_LE |
+      SNDRV_PCM_FMTBIT_S32_LE,
 	},
 	.playback = {
 		.stream_name = "Playback",
@@ -1097,6 +1108,18 @@ static int sun4i_i2s_probe(struct platform_device *pdev)
 		goto err_suspend;
 	}
 
+  // Force slave
+  regmap_update_bits(i2s->regmap, SUN4I_I2S_CTRL_REG,
+         SUN8I_I2S_CTRL_BCLK_OUT |
+         SUN8I_I2S_CTRL_LRCK_OUT,
+         0);
+  // Force offset = 1: I2S mode
+  regmap_update_bits(i2s->regmap, SUN8I_I2S_TX_CHAN_SEL_REG,
+         SUN8I_I2S_TX_CHAN_OFFSET_MASK,
+         SUN8I_I2S_TX_CHAN_OFFSET(1));
+  regmap_update_bits(i2s->regmap, SUN8I_I2S_RX_CHAN_SEL_REG,
+         SUN8I_I2S_RX_CHAN_OFFSET_MASK,
+         SUN8I_I2S_RX_CHAN_OFFSET(1));
 	return 0;
 
 err_suspend:
