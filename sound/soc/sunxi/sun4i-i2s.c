@@ -204,7 +204,7 @@ struct sun4i_i2s_clk_div {
 };
 
 static const struct sun4i_i2s_clk_div sun4i_i2s_bclk_div[] = {
-	{ .div = 2, .val = 0 },
+	{ .div = 2, .val = 0 },  // +2
 	{ .div = 4, .val = 1 },
 	{ .div = 6, .val = 2 },
 	{ .div = 8, .val = 3 },
@@ -214,7 +214,7 @@ static const struct sun4i_i2s_clk_div sun4i_i2s_bclk_div[] = {
 };
 
 static const struct sun4i_i2s_clk_div sun4i_i2s_mclk_div[] = {
-	{ .div = 1, .val = 0 },
+	{ .div = 1, .val = 0 },  // +1
 	{ .div = 2, .val = 1 },
 	{ .div = 4, .val = 2 },
 	{ .div = 6, .val = 3 },
@@ -229,7 +229,8 @@ static int sun4i_i2s_get_bclk_div(struct sun4i_i2s *i2s,
 				  unsigned int oversample_rate,
 				  unsigned int word_size)
 {
-	int div = oversample_rate / word_size / 2;
+  // int div = oversample_rate / word_size / 2;
+	int div = oversample_rate / word_size;
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(sun4i_i2s_bclk_div); i++) {
@@ -338,7 +339,7 @@ static int sun4i_i2s_set_clk_rate(struct sun4i_i2s *i2s,
 	if (i2s->variant->has_fmt_set_lrck_period)
 		regmap_update_bits(i2s->regmap, SUN4I_I2S_FMT0_REG,
 				   SUN8I_I2S_FMT0_LRCK_PERIOD_MASK,
-				   SUN8I_I2S_FMT0_LRCK_PERIOD(word_size * 2));
+				   SUN8I_I2S_FMT0_LRCK_PERIOD(word_size));
 
 	/* Set sign extension to pad out LSB with 0 */
 	regmap_field_write(i2s->field_fmt_sext, 0);
@@ -596,6 +597,11 @@ static void sun4i_i2s_stop_capture(struct sun4i_i2s *i2s)
 
 static void sun4i_i2s_stop_playback(struct sun4i_i2s *i2s)
 {
+	/* Flush TX FIFO */
+	regmap_update_bits(i2s->regmap, SUN4I_I2S_FIFO_CTRL_REG,
+			   SUN4I_I2S_FIFO_CTRL_FLUSH_TX,
+			   SUN4I_I2S_FIFO_CTRL_FLUSH_TX);
+
 	/* Disable TX Block */
 	regmap_update_bits(i2s->regmap, SUN4I_I2S_CTRL_REG,
 			   SUN4I_I2S_CTRL_TX_EN,
