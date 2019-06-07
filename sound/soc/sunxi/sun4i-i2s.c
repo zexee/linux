@@ -338,7 +338,7 @@ static int sun4i_i2s_set_clk_rate(struct sun4i_i2s *i2s,
 	if (i2s->variant->has_fmt_set_lrck_period)
 		regmap_update_bits(i2s->regmap, SUN4I_I2S_FMT0_REG,
 				   SUN8I_I2S_FMT0_LRCK_PERIOD_MASK,
-				   SUN8I_I2S_FMT0_LRCK_PERIOD(32));
+				   SUN8I_I2S_FMT0_LRCK_PERIOD(word_size * 2));
 
 	/* Set sign extension to pad out LSB with 0 */
 	regmap_field_write(i2s->field_fmt_sext, 0);
@@ -387,6 +387,10 @@ static int sun4i_i2s_hw_params(struct snd_pcm_substream *substream,
 	case 16:
 		width = DMA_SLAVE_BUSWIDTH_2_BYTES;
 		break;
+	case 24:
+	case 32:
+		width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -396,6 +400,14 @@ static int sun4i_i2s_hw_params(struct snd_pcm_substream *substream,
 	case 16:
 		sr = 0;
 		wss = 0;
+		break;
+	case 24:
+		sr = 2;
+		wss = 2;
+		break;
+	case 32:
+		sr = 4;
+		wss = 4;
 		break;
 
 	default:
@@ -702,14 +714,20 @@ static struct snd_soc_dai_driver sun4i_i2s_dai = {
 		.channels_min = 2,
 		.channels_max = 2,
 		.rates = SNDRV_PCM_RATE_8000_192000,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		.formats =
+        SNDRV_PCM_FMTBIT_S16_LE |
+        SNDRV_PCM_FMTBIT_S24_LE |
+        SNDRV_PCM_FMTBIT_S32_LE,
 	},
 	.playback = {
 		.stream_name = "Playback",
 		.channels_min = 2,
 		.channels_max = 2,
 		.rates = SNDRV_PCM_RATE_8000_192000,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		.formats =
+        SNDRV_PCM_FMTBIT_S16_LE |
+        SNDRV_PCM_FMTBIT_S24_LE |
+        SNDRV_PCM_FMTBIT_S32_LE,
 	},
 	.ops = &sun4i_i2s_dai_ops,
 	.symmetric_rates = 1,
